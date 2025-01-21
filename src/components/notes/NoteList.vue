@@ -45,7 +45,7 @@
       <!-- Notlar grid'i -->
       <draggable
         v-model="filteredNotes"
-        group="notes"
+        :group="{ name: 'notes', pull: 'clone', put: false }"
         item-key="id"
         class="row g-2 mx-0"
         @end="onDragEnd"
@@ -61,11 +61,13 @@
               class="card note-card"
               :class="{ 
                 active: activeNote?.id === note.id,
-                highlighted: route.query.highlight === note.id
+                highlighted: route.query.highlight === note.id,
+                dragging: isDragging === note.id
               }"
               :data-note-id="note.id"
               draggable="true"
               @dragstart="handleNoteDragStart($event, note)"
+              @dragend="handleNoteDragEnd"
             >
               <div class="card-body p-2">
                 <div class="d-flex justify-content-between align-items-center">
@@ -265,21 +267,14 @@ const folders = computed(() => store.getters['folders/getAllFolders']);
 
 const searchQuery = ref('');
 
+const isDragging = ref(null);
+
 // Filtrelenmiş notlar
 const filteredNotes = computed({
   get: () => {
-    // Store'dan notları al
-    const allNotes = store.state.notes.notes;
-    
-    // Aktif klasöre göre filtrele
-    let notes = allNotes;
-    if (activeFolder.value) {
-      notes = allNotes.filter(note => 
-        activeFolder.value === 'all' 
-          ? !note.folderId 
-          : note.folderId === activeFolder.value
-      );
-    }
+    let notes = activeFolder.value
+      ? store.getters['notes/getNotesByFolder'](activeFolder.value)
+      : store.getters['notes/getAllNotes'];
     
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase();
@@ -323,39 +318,20 @@ const selectNote = (note) => {
 
 // Sürükle-bırak işlemi sonrası
 const onDragEnd = async (evt) => {
-  const targetFolderId = evt.to.dataset.folderId;
-  const sourceFolder = evt.from.dataset.folderId;
-  const noteId = evt.item.querySelector('.note-card').dataset.noteId;
-  const note = notes.value.find(n => n.id === noteId);
-
-  if (!note) return;
-
+  if (!evt.to || evt.to.dataset.type !== 'folder') return;
+  
   try {
-    isLoading.value = true
-    // Klasörler arası taşıma
-    if (targetFolderId !== sourceFolder) {
+    const targetFolderId = evt.to.dataset.folderId;
+    const noteId = evt.item.dataset.noteId;
+
+    if (noteId && targetFolderId) {
       await store.dispatch('notes/updateNoteFolder', {
         noteId,
         folderId: targetFolderId === 'all' ? null : targetFolderId
       });
     }
-
-    // Hedef klasördeki notların sırasını güncelle
-    const targetNotes = notes.value
-      .filter(n => {
-        if (targetFolderId === 'all') return !n.folderId;
-        return n.folderId === targetFolderId;
-      })
-      .map((note, index) => ({
-        ...note,
-        order: index
-      }));
-
-    await store.dispatch('notes/updateNotesOrder', targetNotes);
   } catch (error) {
-    console.error('Not güncellenirken hata:', error);
-  } finally {
-    isLoading.value = false
+    console.error('Not taşınırken hata:', error);
   }
 };
 
@@ -407,8 +383,14 @@ const getSelectedFolderName = computed(() => {
 
 // Not sürükleme başladığında
 const handleNoteDragStart = (event, note) => {
-  event.dataTransfer.setData('text/plain', note.id);
+  event.dataTransfer.setData('noteId', note.id);
+  event.dataTransfer.setData('type', 'note');
   event.dataTransfer.effectAllowed = 'move';
+  isDragging.value = note.id;
+};
+
+const handleNoteDragEnd = () => {
+  isDragging.value = null;
 };
 
 // Not kartında HTML içeriği güvenli bir şekilde göster
@@ -596,6 +578,11 @@ const isLoading = ref(false)
     background-color: white;
     transform: scale(1);
   }
+}
+
+.note-card.dragging {
+  opacity: 0.5;
+  cursor: move;
 }
 
 @media (max-width: 768px) {

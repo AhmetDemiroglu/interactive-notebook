@@ -17,13 +17,15 @@ export default {
     state.notes.push(note)
   },
   UPDATE_NOTE(state, updatedNote) {
-    const index = state.notes.findIndex(note => note.id === updatedNote.id)
+    if (!updatedNote || !updatedNote.id) return;
+    
+    const index = state.notes.findIndex(note => note.id === updatedNote.id);
     if (index !== -1) {
       state.notes = [
         ...state.notes.slice(0, index),
         updatedNote,
         ...state.notes.slice(index + 1)
-      ]
+      ];
     }
   },
   DELETE_NOTE(state, noteId) {
@@ -42,6 +44,17 @@ export default {
     })
   },
   UPDATE_NOTES_ORDER(state, notes) {
-    state.notes = notes
+    if (!Array.isArray(notes)) return;
+    
+    notes.forEach(updatedNote => {
+      const index = state.notes.findIndex(n => n.id === updatedNote.id);
+      if (index !== -1 && updatedNote.title && updatedNote.content) {
+        state.notes[index] = {
+          ...state.notes[index],
+          order: updatedNote.order,
+          updatedAt: updatedNote.updatedAt
+        };
+      }
+    });
   }
 } 

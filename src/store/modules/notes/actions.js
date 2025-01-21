@@ -90,25 +90,30 @@ export default {
     }
   },
 
+  async updateNotesOrder({ commit }, notes) {
+    try {
+      if (!Array.isArray(notes) || notes.length === 0) return;
+      
+      const validNotes = notes.filter(note => 
+        note && note.id && (note.title || note.content)
+      );
+      
+      if (validNotes.length === 0) return;
+
+      await api.updateNotesOrder(validNotes);
+      commit('UPDATE_NOTES_ORDER', validNotes);
+    } catch (error) {
+      console.error('Notların sırası güncellenirken hata:', error);
+      throw error;
+    }
+  },
+
   async updateNoteFolder({ commit, dispatch }, { noteId, folderId }) {
     try {
       commit('SET_LOADING', true, { root: true })
       const note = await api.updateNote(noteId, { folderId })
       commit('UPDATE_NOTE', note)
       await dispatch('fetchNotes')
-    } catch (error) {
-      commit('SET_ERROR', error.message, { root: true })
-      throw error
-    } finally {
-      commit('SET_LOADING', false, { root: true })
-    }
-  },
-
-  async updateNotesOrder({ commit }, notes) {
-    try {
-      commit('SET_LOADING', true, { root: true })
-      const updatedNotes = await api.updateNotesOrder(notes)
-      commit('UPDATE_NOTES_ORDER', updatedNotes)
     } catch (error) {
       commit('SET_ERROR', error.message, { root: true })
       throw error

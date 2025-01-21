@@ -39,7 +39,7 @@
           data-folder-id="all"
           @click="goToAllNotes"
           @dragover.prevent
-          @drop="handleNoteDrop($event, null)"
+          @drop="handleDrop($event, null)"
         >
           <div class="d-flex align-items-center">
             <i class="bi bi-journal-text me-2"></i>
@@ -63,20 +63,28 @@
         <draggable 
           v-model="draggableFolders" 
           item-key="id"
-          group="folders"
+          group="folders-only"
+          handle=".folder-item"
           @end="onDragEnd"
           ghost-class="ghost-folder"
           drag-class="dragging-folder"
+          :data-type="'folder'"
         >
           <template #item="{ element }">
             <div 
               v-if="!searchQuery || element.name.toLowerCase().includes(searchQuery.toLowerCase())"
               :key="element.id"  
               class="d-flex justify-content-between align-items-center p-2 folder-item"
-              :class="{ active: activeFolder === element.id }"
+              :class="{ 
+                active: activeFolder === element.id,
+                'drag-over': isDragOver === element.id
+              }"
               :data-folder-id="element.id"
+              :data-type="'folder'"
               @dragover.prevent
-              @drop="handleNoteDrop($event, element.id)"
+              @dragenter.prevent="handleDragEnter($event, element.id)"
+              @dragleave.prevent="handleDragLeave($event, element.id)"
+              @drop="handleDrop($event, element.id)"
             >
               <div class="d-flex align-items-center flex-grow-1" @click="selectFolder(element.id)">
                 <i class="bi bi-folder me-2"></i>
@@ -407,9 +415,14 @@ const deleteFolder = async () => {
 };
 
 // Sürükle-bırak sonrası
-const onDragEnd = () => {
-  // v-model otomatik olarak set fonksiyonunu çağıracak
-  // Ekstra bir işleme gerek yok
+const onDragEnd = async (evt) => {
+  if (evt.from !== evt.to || evt.from.dataset.type !== 'folder') return;
+  
+  try {
+    await store.dispatch('folders/updateFolderOrder', draggableFolders.value);
+  } catch (error) {
+    console.error('Klasör sırası güncellenirken hata:', error);
+  }
 };
 
 // Tüm notlara git
@@ -457,11 +470,15 @@ watch(searchQuery, (newValue) => {
 });
 
 // Not bırakma işlemi
-const handleNoteDrop = async (event, targetFolderId) => {
+const handleDrop = async (event, targetFolderId) => {
   event.preventDefault();
   
+  // Sürüklenen öğenin tipini kontrol et
+  const sourceType = event.dataTransfer.getData('type');
+  if (sourceType !== 'note') return;
+  
   // Sürüklenen notun ID'sini al
-  const noteId = event.dataTransfer.getData('text/plain');
+  const noteId = event.dataTransfer.getData('noteId');
   if (!noteId) return;
 
   try {
@@ -513,6 +530,20 @@ const updateFolder = async () => {
     }
   }
 }
+
+const isDragOver = ref(null);
+
+const handleDragEnter = (event, folderId) => {
+  event.preventDefault();
+  isDragOver.value = folderId;
+};
+
+const handleDragLeave = (event, folderId) => {
+  event.preventDefault();
+  if (isDragOver.value === folderId) {
+    isDragOver.value = null;
+  }
+};
 </script>
 
 <style scoped>
