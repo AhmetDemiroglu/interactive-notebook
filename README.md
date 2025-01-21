@@ -65,5 +65,5 @@ Bu not yönetimi uygulaması, kullanıcıların notlarını etkili bir şekilde 
 Proje ile ilgili sorularınız veya önerileriniz için benimle iletişime geçebilirsiniz:
 
 - **E-posta:** ahmetdemiroglu89@gmail.com
-- **LinkedIn:** [LinkedIn Profilim](https://www.linkedin.com/in/ahmetdemiroglu/)
-- **GitHub:** [kullanici](https://github.com/AhmetDemiroglu)
+- **LinkedIn:** [Ahmet Demiroğlu](https://www.linkedin.com/in/ahmetdemiroglu/)
+- **GitHub:** [AhmetDemiroglu](https://github.com/AhmetDemiroglu)
