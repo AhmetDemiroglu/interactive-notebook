@@ -131,17 +131,32 @@
                 :api-key="apiKey"
                 :init="{
                   height: 200,
-                  menubar: false,
+                  menubar: 'file edit view insert format tools table help',
                   plugins: [
-                    'advlist autolink lists link image charmap preview anchor',
-                    'searchreplace visualblocks code fullscreen',
-                    'insertdatetime media table code help wordcount'
+                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                    'insertdatetime', 'media', 'table', 'help', 'wordcount'
                   ],
-                  toolbar: 'undo redo | formatselect | ' +
-                    'bold italic backcolor | alignleft aligncenter ' +
-                    'alignright alignjustify | bullist numlist outdent indent | ' +
-                    'removeformat | help',
-                  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                  toolbar: [
+                    'undo redo | formatselect | bold italic backcolor | ',
+                    'alignleft aligncenter alignright alignjustify | ',
+                    'bullist numlist outdent indent | removeformat | help'
+                  ].join(''),
+                  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                  statusbar: true,
+                  resize: true,
+                  branding: false,
+                  promotion: false,
+                  language: 'tr',
+                  paste_data_images: true,
+                  convert_urls: false,
+                  relative_urls: false,
+                  remove_script_host: false,
+                  setup: function (editor) {
+                    editor.on('init', function () {
+                      editor.getContainer().style.transition = 'border-color 0.15s ease-in-out'
+                    })
+                  }
                 }"
               />
             </div>
@@ -515,6 +530,15 @@ const isLoading = ref(false)
 /* TinyMCE editör stilleri */
 :deep(.tox-tinymce) {
   border-radius: 0.375rem;
+  border: 1px solid #dee2e6;
+}
+
+:deep(.tox-statusbar) {
+  border-top: 1px solid #dee2e6 !important;
+}
+
+:deep(.tox-editor-container) {
+  background: white;
 }
 
 :deep(.tox-toolbar__primary) {

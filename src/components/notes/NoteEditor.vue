@@ -85,23 +85,32 @@
       :api-key="apiKey"
       :init="{
         height: 'calc(100vh - 300px)',
-        menubar: true,
+        menubar: 'file edit view insert format tools table help',
         plugins: [
-          'advlist autolink lists link image charmap preview anchor',
-          'searchreplace visualblocks code fullscreen',
-          'insertdatetime media table paste code help wordcount'
+          'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+          'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+          'insertdatetime', 'media', 'table', 'help', 'wordcount'
         ],
-        toolbar: 'undo redo | formatselect | ' +
-          'bold italic backcolor | alignleft aligncenter ' +
-          'alignright alignjustify | bullist numlist outdent indent | ' +
-          'removeformat | help',
+        toolbar: [
+          'undo redo | formatselect | bold italic backcolor | ',
+          'alignleft aligncenter alignright alignjustify | ',
+          'bullist numlist outdent indent | removeformat | help'
+        ].join(''),
         content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px; max-width: 100%; }',
         statusbar: true,
         resize: true,
-        autosave_ask_before_unload: true,
-        autosave_interval: '30s',
-        autosave_prefix: 'tinymce-autosave-{path}-{id}-',
-        autosave_restore_when_empty: true
+        branding: false,
+        promotion: false,
+        language: 'tr',
+        paste_data_images: true,
+        convert_urls: false,
+        relative_urls: false,
+        remove_script_host: false,
+        setup: function (editor) {
+          editor.on('init', function () {
+            editor.getContainer().style.transition = 'border-color 0.15s ease-in-out'
+          })
+        }
       }"
       @change="autoSave"
     />
@@ -248,41 +257,19 @@ const formatDate = (timestamp) => {
   });
 };
 
-// Otomatik kaydetme (debounce ile)
-const autoSave = debounce(async () => {
-  try {
-    isLoading.value = true
-    await store.dispatch('notes/updateNote', {
-      id: noteId.value,
-      note: {
-        ...localNote.value,
-        updatedAt: Date.now()
-      }
-    });
-  } catch (error) {
-    console.error('Otomatik kaydetme sırasında hata:', error);
-  } finally {
-    isLoading.value = false
-  }
-}, 2000);
-
-// Not değiştiğinde store'u güncelle
-watch(localNote, (newValue) => {
-  if (newValue) {
-    store.commit('notes/SET_ACTIVE_NOTE', { ...newValue });
-  }
-}, { deep: true });
-
 // Component yüklendiğinde ve route değiştiğinde notu getir
 watch([noteId, activeNote], async ([newNoteId, newActiveNote]) => {
   if (newNoteId) {
     if (!newActiveNote || newActiveNote.id !== newNoteId) {
       try {
+        isLoading.value = true;
         // Store'dan notu getir
         await store.dispatch('notes/fetchNote', newNoteId);
       } catch (error) {
         console.error('Not yüklenirken hata:', error);
         router.push('/');
+      } finally {
+        isLoading.value = false;
       }
     } else {
       // Active note varsa ve ID'ler eşleşiyorsa, local state'i güncelle
@@ -291,12 +278,30 @@ watch([noteId, activeNote], async ([newNoteId, newActiveNote]) => {
   }
 }, { immediate: true });
 
-// Active note değiştiğinde yerel state'i güncelle
-watch(activeNote, (newNote) => {
-  if (newNote) {
-    localNote.value = { ...newNote };
+// Otomatik kaydetme (debounce ile)
+const autoSave = debounce(async () => {
+  if (!localNote.value.title || !localNote.value.content) return;
+  
+  try {
+    isLoading.value = true;
+    const updatedNote = {
+      ...localNote.value,
+      updatedAt: Date.now()
+    };
+    
+    await store.dispatch('notes/updateNote', {
+      id: noteId.value,
+      note: updatedNote
+    });
+    
+    // Store'u güncelle ama watch tetiklenmeyecek
+    store.commit('notes/SET_ACTIVE_NOTE', updatedNote);
+  } catch (error) {
+    console.error('Otomatik kaydetme sırasında hata:', error);
+  } finally {
+    isLoading.value = false;
   }
-});
+}, 2000);
 
 // Modal state'i
 const showFolderModal = ref(false);
@@ -464,6 +469,14 @@ const isLoading = ref(false)
 :deep(.tox-tinymce) {
   border: none !important;
   border-top: 1px solid #dee2e6 !important;
+}
+
+:deep(.tox-statusbar) {
+  border-top: 1px solid #dee2e6 !important;
+}
+
+:deep(.tox-editor-container) {
+  background: white;
 }
 
 /* Yazdırma stili */

@@ -8,8 +8,13 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      redirect: '/folder/all'
+    },
+    {
+      path: '/folder/:folder',
       name: 'home',
-      component: HomeView
+      component: HomeView,
+      props: true
     },
     {
       path: '/note/:id',
