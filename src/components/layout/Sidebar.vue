@@ -77,14 +77,18 @@
               class="d-flex justify-content-between align-items-center p-2 folder-item"
               :class="{ 
                 active: activeFolder === element.id,
-                'drag-over': isDragOver === element.id
+                'drag-over': isDragOver === element.id,
+                'mobile-drag': isMobile
               }"
               :data-folder-id="element.id"
               :data-type="'folder'"
+              :draggable="isDraggable"
               @dragover.prevent
               @dragenter.prevent="handleDragEnter($event, element.id)"
               @dragleave.prevent="handleDragLeave($event, element.id)"
               @drop="handleDrop($event, element.id)"
+              @touchstart="handleTouchStart"
+              @touchend="handleTouchEnd"
             >
               <div class="d-flex align-items-center flex-grow-1" @click="selectFolder(element.id)">
                 <i class="bi bi-folder me-2"></i>
@@ -303,6 +307,7 @@ import { useStore } from 'vuex';
 import draggable from 'vuedraggable';
 import { useRouter, useRoute } from 'vue-router';
 import Editor from '@tinymce/tinymce-vue';
+import { useMediaQuery } from '@vueuse/core';
 
 const store = useStore();
 const router = useRouter();
@@ -544,6 +549,26 @@ const handleDragLeave = (event, folderId) => {
     isDragOver.value = null;
   }
 };
+
+const isMobile = useMediaQuery('(max-width: 768px)')
+const isDraggable = computed(() => !isMobile.value || isLongPress.value)
+const isLongPress = ref(false)
+let longPressTimer = null
+
+const handleTouchStart = () => {
+  if (!isMobile.value) return
+  
+  longPressTimer = setTimeout(() => {
+    isLongPress.value = true
+  }, 500) // 500ms uzun basma süresi
+}
+
+const handleTouchEnd = () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+  }
+  isLongPress.value = false
+}
 </script>
 
 <style scoped>
@@ -697,5 +722,32 @@ const handleDragLeave = (event, folderId) => {
   .folder-actions {
     opacity: 1;
   }
+}
+
+.note-card.mobile-drag {
+  touch-action: none; /* Mobilde scroll engellemesi */
+}
+
+.note-card.mobile-drag.dragging {
+  opacity: 0.5;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+}
+
+/* Mobilde sürükleme başladığında gösterilecek ipucu */
+.note-card.mobile-drag::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.1);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.note-card.mobile-drag.isLongPress::before {
+  opacity: 1;
 }
 </style>

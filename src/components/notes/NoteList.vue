@@ -62,10 +62,13 @@
               :class="{ 
                 active: activeNote?.id === note.id,
                 highlighted: route.query.highlight === note.id,
-                dragging: isDragging === note.id
+                dragging: isDragging === note.id,
+                'mobile-drag': isMobile
               }"
               :data-note-id="note.id"
-              draggable="true"
+              :draggable="isDraggable"
+              @touchstart="handleTouchStart"
+              @touchend="handleTouchEnd"
               @dragstart="handleNoteDragStart($event, note)"
               @dragend="handleNoteDragEnd"
             >
@@ -245,6 +248,7 @@ import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import draggable from 'vuedraggable';
 import Editor from '@tinymce/tinymce-vue';
+import { useMediaQuery } from '@vueuse/core'
 
 const store = useStore();
 const router = useRouter();
@@ -436,6 +440,26 @@ const editNote = (note) => {
 };
 
 const isLoading = ref(false)
+
+const isMobile = useMediaQuery('(max-width: 768px)')
+const isDraggable = computed(() => !isMobile.value || isLongPress.value)
+const isLongPress = ref(false)
+let longPressTimer = null
+
+const handleTouchStart = () => {
+  if (!isMobile.value) return
+  
+  longPressTimer = setTimeout(() => {
+    isLongPress.value = true
+  }, 500) // 500ms uzun basma süresi
+}
+
+const handleTouchEnd = () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+  }
+  isLongPress.value = false
+}
 </script>
 
 <style scoped>
@@ -747,5 +771,32 @@ const isLoading = ref(false)
     flex: 0 0 25%;
     max-width: 25%;
   }
+}
+
+.note-card.mobile-drag {
+  touch-action: none; /* Mobilde scroll engellemesi */
+}
+
+.note-card.mobile-drag.dragging {
+  opacity: 0.5;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+}
+
+/* Mobilde sürükleme başladığında gösterilecek ipucu */
+.note-card.mobile-drag::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.1);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.note-card.mobile-drag.isLongPress::before {
+  opacity: 1;
 }
 </style>
