@@ -19,7 +19,11 @@ export default {
   UPDATE_NOTE(state, updatedNote) {
     const index = state.notes.findIndex(note => note.id === updatedNote.id)
     if (index !== -1) {
-      state.notes.splice(index, 1, updatedNote)
+      state.notes = [
+        ...state.notes.slice(0, index),
+        updatedNote,
+        ...state.notes.slice(index + 1)
+      ]
     }
   },
   DELETE_NOTE(state, noteId) {
@@ -36,5 +40,8 @@ export default {
         }
       }
     })
+  },
+  UPDATE_NOTES_ORDER(state, notes) {
+    state.notes = notes
   }
 } 

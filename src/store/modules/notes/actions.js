@@ -88,5 +88,32 @@ export default {
     } finally {
       commit('SET_LOADING', false, { root: true })
     }
+  },
+
+  async updateNoteFolder({ commit, dispatch }, { noteId, folderId }) {
+    try {
+      commit('SET_LOADING', true, { root: true })
+      const note = await api.updateNote(noteId, { folderId })
+      commit('UPDATE_NOTE', note)
+      await dispatch('fetchNotes')
+    } catch (error) {
+      commit('SET_ERROR', error.message, { root: true })
+      throw error
+    } finally {
+      commit('SET_LOADING', false, { root: true })
+    }
+  },
+
+  async updateNotesOrder({ commit }, notes) {
+    try {
+      commit('SET_LOADING', true, { root: true })
+      const updatedNotes = await api.updateNotesOrder(notes)
+      commit('UPDATE_NOTES_ORDER', updatedNotes)
+    } catch (error) {
+      commit('SET_ERROR', error.message, { root: true })
+      throw error
+    } finally {
+      commit('SET_LOADING', false, { root: true })
+    }
   }
 } 

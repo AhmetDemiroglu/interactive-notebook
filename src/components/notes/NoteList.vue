@@ -253,9 +253,18 @@ const searchQuery = ref('');
 // Filtrelenmiş notlar
 const filteredNotes = computed({
   get: () => {
-    let notes = activeFolder.value
-      ? store.getters['notes/getNotesByFolder'](activeFolder.value)
-      : store.getters['notes/getAllNotes'];
+    // Store'dan notları al
+    const allNotes = store.state.notes.notes;
+    
+    // Aktif klasöre göre filtrele
+    let notes = allNotes;
+    if (activeFolder.value) {
+      notes = allNotes.filter(note => 
+        activeFolder.value === 'all' 
+          ? !note.folderId 
+          : note.folderId === activeFolder.value
+      );
+    }
     
     if (searchQuery.value) {
       const query = searchQuery.value.toLowerCase();
@@ -277,7 +286,6 @@ const filteredNotes = computed({
       }));
 
       await store.dispatch('notes/updateNotesOrder', updatedNotes);
-      store.commit('notes/UPDATE_NOTES_ORDER', updatedNotes);
     } catch (error) {
       console.error('Notların sırası güncellenirken hata:', error);
     } finally {

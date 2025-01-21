@@ -11,7 +11,18 @@ export default {
   getActiveNote: state => state.activeNote,
 
   getNotesByFolder: state => folderId => {
-    return state.notes.filter(note => note.folderId === folderId)
+    // Klasöre göre filtreleme
+    const filteredNotes = folderId === 'all' 
+      ? state.notes.filter(note => !note.folderId)  // Klasörsüz notlar
+      : state.notes.filter(note => note.folderId === folderId);  // Klasörlü notlar
+
+    // Sıralama
+    return [...filteredNotes].sort((a, b) => {
+      if (a.order !== undefined && b.order !== undefined) {
+        return a.order - b.order
+      }
+      return a.createdAt - b.createdAt
+    });
   },
 
   getFilteredNotes: state => {
