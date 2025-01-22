@@ -2,8 +2,12 @@
   <header class="app-header">
     <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
       <div class="container-fluid">
-        <!-- Logo ve Başlık -->
-        <div class="navbar-brand d-flex align-items-center">
+        <!-- Logo ve Başlık - Tıklanabilir -->
+        <router-link 
+          to="/folder/all" 
+          class="navbar-brand d-flex align-items-center"
+          title="Tüm Notlar"
+        >
           <img 
             src="../../assets/mindvault-logo.png" 
             alt="MindVault Logo" 
@@ -14,14 +18,19 @@
             alt="MindVault" 
             class="logo me-2"
           >
-        </div>
+        </router-link>
       </div>
     </nav>
   </header>
 </template>
 
 <script setup>
-// Artık ekstra bir şeye ihtiyacımız yok
+import { useRouter } from 'vue-router'
+const router = useRouter()
+
+const goToHome = () => {
+  router.push('/folder/all')
+}
 </script>
 
 <style scoped>
@@ -68,5 +77,14 @@
   .app-header {
     display: none;
   }
+}
+
+.navbar-brand {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.navbar-brand:hover {
+  opacity: 0.8;
 }
 </style> 

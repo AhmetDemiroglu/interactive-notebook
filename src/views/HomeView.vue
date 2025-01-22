@@ -8,18 +8,44 @@
       </div>
     </div>
     <div v-else class="container-xl">
-      <NoteList />
+      <NoteList 
+        :is-draggable="isDraggable"
+        @touch-start="handleTouchStart"
+        @touch-end="handleTouchEnd"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted, computed } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useStore } from 'vuex'
+import { useMediaQuery } from '@vueuse/core'
 import NoteList from '../components/notes/NoteList.vue'
 
 const store = useStore()
 const isLoading = computed(() => store.getters.isLoading)
+
+// Mobil kontrolleri
+const isMobile = useMediaQuery('(max-width: 768px)')
+const isLongPress = ref(false)
+const isDraggable = computed(() => !isMobile.value || isLongPress.value)
+let longPressTimer = null
+
+const handleTouchStart = () => {
+  if (!isMobile.value) return
+  
+  longPressTimer = setTimeout(() => {
+    isLongPress.value = true
+  }, 500)
+}
+
+const handleTouchEnd = () => {
+  if (longPressTimer) {
+    clearTimeout(longPressTimer)
+  }
+  isLongPress.value = false
+}
 
 onMounted(async () => {
   try {
