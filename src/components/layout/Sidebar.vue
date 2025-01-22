@@ -193,17 +193,52 @@
                 :api-key="apiKey"
                 :init="{
                   height: 200,
-                  menubar: false,
+                  menubar: 'file edit view insert format tools table help',
                   plugins: [
-                    'advlist autolink lists link image charmap preview anchor',
-                    'searchreplace visualblocks code fullscreen',
-                    'insertdatetime media table code help wordcount'
+                    'advlist',
+                    'autolink',
+                    'lists',
+                    'link',
+                    'image',
+                    'charmap',
+                    'preview',
+                    'anchor',
+                    'searchreplace',
+                    'visualblocks',
+                    'code',
+                    'fullscreen',
+                    'insertdatetime',
+                    'media',
+                    'table',
+                    'code',
+                    'help',
+                    'wordcount',
+                    'save',
+                    'emoticons',
+                    'codesample'
                   ],
-                  toolbar: 'undo redo | formatselect | ' +
-                    'bold italic backcolor | alignleft aligncenter ' +
-                    'alignright alignjustify | bullist numlist outdent indent | ' +
-                    'removeformat | help',
-                  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+                  toolbar: [
+                    'undo redo | blocks | bold italic backcolor | alignleft aligncenter alignright alignjustify |',
+                    'bullist numlist outdent indent | removeformat | help | code | codesample'
+                  ].join(''),
+                  content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                  statusbar: true,
+                  resize: true,
+                  branding: false,
+                  promotion: false,
+                  language: 'tr',
+                  paste_data_images: true,
+                  paste_as_text: false,
+                  convert_urls: false,
+                  relative_urls: false,
+                  remove_script_host: false,
+                  extended_valid_elements: 'script[language|type|src]',
+                  valid_children: '+body[style]',
+                  setup: function (editor) {
+                    editor.on('init', function () {
+                      editor.getContainer().style.transition = 'border-color 0.15s ease-in-out'
+                    })
+                  }
                 }"
               />
             </div>

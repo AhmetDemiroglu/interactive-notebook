@@ -161,14 +161,31 @@
                   height: 200,
                   menubar: 'file edit view insert format tools table help',
                   plugins: [
-                    'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                    'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                    'insertdatetime', 'media', 'table', 'help', 'wordcount'
+                    'advlist',
+                    'autolink',
+                    'lists',
+                    'link',
+                    'image',
+                    'charmap',
+                    'preview',
+                    'anchor',
+                    'searchreplace',
+                    'visualblocks',
+                    'code',
+                    'fullscreen',
+                    'insertdatetime',
+                    'media',
+                    'table',
+                    'code',
+                    'help',
+                    'wordcount',
+                    'save',
+                    'emoticons',
+                    'codesample'
                   ],
                   toolbar: [
-                    'undo redo | formatselect | bold italic backcolor | ',
-                    'alignleft aligncenter alignright alignjustify | ',
-                    'bullist numlist outdent indent | removeformat | help'
+                    'undo redo | blocks | bold italic backcolor | alignleft aligncenter alignright alignjustify |',
+                    'bullist numlist outdent indent | removeformat | help | code | codesample'
                   ].join(''),
                   content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
                   statusbar: true,
@@ -177,9 +194,12 @@
                   promotion: false,
                   language: 'tr',
                   paste_data_images: true,
+                  paste_as_text: false,
                   convert_urls: false,
                   relative_urls: false,
                   remove_script_host: false,
+                  extended_valid_elements: 'script[language|type|src]',
+                  valid_children: '+body[style]',
                   setup: function (editor) {
                     editor.on('init', function () {
                       editor.getContainer().style.transition = 'border-color 0.15s ease-in-out'
@@ -837,9 +857,8 @@ const handleDragLeave = (event, id) => {
   .note-card {
     width: 100%;
     margin: 0;
-    touch-action: none;
-    position: relative;
-    will-change: transform;
+    touch-action: pan-y;
+    user-select: none;
   }
 
   .ghost-card {
@@ -875,7 +894,30 @@ const handleDragLeave = (event, id) => {
   }
 
   .drag-handle-mobile {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    border-radius: 4px 0 0 4px;
+    cursor: grab;
     touch-action: none;
+    pointer-events: auto;
+  }
+
+  .btn-group {
+    pointer-events: auto;
+    z-index: 2;
+  }
+
+  .card-body {
+    touch-action: pan-y;
+    pointer-events: auto;
   }
 
   .col-12 {
@@ -936,6 +978,7 @@ const handleDragLeave = (event, id) => {
     border-right: 1px solid #dee2e6;
     border-radius: 4px 0 0 4px;
     cursor: grab;
+    touch-action: none;
     pointer-events: auto;
   }
 
