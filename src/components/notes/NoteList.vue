@@ -47,7 +47,7 @@
         v-model="filteredNotes"
         :group="'notes'"
         item-key="id"
-        class="row g-2 mx-0"
+        :class="{'row g-2 mx-0': !isMobile, 'mobile-note-list': isMobile}"
         @end="onDragEnd"
         :data-folder-id="activeFolder"
         ghost-class="ghost-card"
@@ -800,6 +800,23 @@ const createNewFolder = async () => {
 }
 
 @media (max-width: 768px) {
+  .mobile-note-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .note-card {
+    width: 100%;
+    margin: 0;
+  }
+
+  .col-12 {
+    width: 100%;
+    padding: 0;
+  }
+
   .note-list {
     padding: 8px;
   }
