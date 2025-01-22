@@ -33,9 +33,6 @@
       <NoteList 
         :notes="notes" 
         :folder-id="folderId"
-        :is-draggable="isDraggable"
-        @touch-start="handleTouchStart"
-        @touch-end="handleTouchEnd"
       />
     </div>
   </div>
@@ -45,7 +42,6 @@
 import { computed, ref } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute, useRouter } from 'vue-router'
-import { useMediaQuery } from '@vueuse/core'
 import NoteList from './NoteList.vue'
 
 const store = useStore()
@@ -64,27 +60,6 @@ const notes = computed(() =>
 )
 
 const showNewNoteModal = ref(false)
-
-// Mobil kontrolleri
-const isMobile = useMediaQuery('(max-width: 768px)')
-const isLongPress = ref(false)
-const isDraggable = computed(() => !isMobile.value || isLongPress.value)
-let longPressTimer = null
-
-const handleTouchStart = () => {
-  if (!isMobile.value) return
-  
-  longPressTimer = setTimeout(() => {
-    isLongPress.value = true
-  }, 500)
-}
-
-const handleTouchEnd = () => {
-  if (longPressTimer) {
-    clearTimeout(longPressTimer)
-  }
-  isLongPress.value = false
-}
 
 const renameFolder = () => {
   // Klasör yeniden adlandırma modalını göster

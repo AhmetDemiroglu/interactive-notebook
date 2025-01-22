@@ -63,14 +63,13 @@
                 active: activeNote?.id === note.id,
                 highlighted: route.query.highlight === note.id,
                 dragging: isDragging === note.id,
-                'mobile-drag': isMobile
+                'mobile-drag': isMobile && isLongPress
               }"
               :data-note-id="note.id"
-              :draggable="isDraggable"
-              @touchstart="handleTouchStart"
-              @touchend="handleTouchEnd"
-              @dragstart="handleNoteDragStart($event, note)"
-              @dragend="handleNoteDragEnd"
+              :draggable="isMobile ? isLongPress : true"
+              @touchstart.prevent="handleTouchStart($event, note)"
+              @touchend.prevent="handleTouchEnd($event, note)"
+              @touchcancel.prevent="handleTouchCancel"
             >
               <div class="card-body p-2">
                 <div class="d-flex justify-content-between align-items-center">
@@ -442,22 +441,38 @@ const editNote = (note) => {
 const isLoading = ref(false)
 
 const isMobile = useMediaQuery('(max-width: 768px)')
-const isDraggable = computed(() => !isMobile.value || isLongPress.value)
 const isLongPress = ref(false)
-let longPressTimer = null
+const touchTimer = ref(null)
+const touchStartPos = ref({ x: 0, y: 0 })
 
-const handleTouchStart = () => {
+const handleTouchStart = (event, note) => {
   if (!isMobile.value) return
   
-  longPressTimer = setTimeout(() => {
+  touchStartPos.value = {
+    x: event.touches[0].clientX,
+    y: event.touches[0].clientY
+  }
+  
+  touchTimer.value = setTimeout(() => {
     isLongPress.value = true
-  }, 500) // 500ms uzun basma süresi
+  }, 500)
 }
 
-const handleTouchEnd = () => {
-  if (longPressTimer) {
-    clearTimeout(longPressTimer)
+const handleTouchEnd = (event, note) => {
+  if (!isMobile.value) return
+  
+  clearTimeout(touchTimer.value)
+  
+  if (!isLongPress.value) {
+    // Kısa dokunma - tıklama olarak işle
+    selectNote(note)
   }
+  
+  isLongPress.value = false
+}
+
+const handleTouchCancel = () => {
+  clearTimeout(touchTimer.value)
   isLongPress.value = false
 }
 </script>
