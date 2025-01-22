@@ -83,13 +83,10 @@
               :data-folder-id="element.id"
               :data-type="'folder'"
               :draggable="isMobile ? isLongPress : true"
-              @dragover.prevent
-              @dragenter.prevent="handleDragEnter($event, element.id)"
-              @dragleave.prevent="handleDragLeave($event, element.id)"
-              @drop="handleDrop($event, element.id)"
-              @touchstart.prevent="handleTouchStart($event, element)"
-              @touchend.prevent="handleTouchEnd($event, element)"
-              @touchcancel.prevent="handleTouchCancel"
+              @touchstart="handleTouchStart($event, element)"
+              @touchend="handleTouchEnd($event, element)"
+              @touchcancel="handleTouchCancel"
+              @click="handleClick($event, element)"
             >
               <div class="d-flex align-items-center flex-grow-1" @click="selectFolder(element.id)">
                 <i class="bi bi-folder me-2"></i>
@@ -564,9 +561,9 @@ const handleTouchStart = (event, folder) => {
     y: event.touches[0].clientY
   }
   
-  // Uzun basma timer'ı başlat
   touchTimer.value = setTimeout(() => {
     isLongPress.value = true
+    event.target.classList.add('long-press')
   }, 500)
 }
 
@@ -574,18 +571,19 @@ const handleTouchEnd = (event, folder) => {
   if (!isMobile.value) return
   
   clearTimeout(touchTimer.value)
-  
-  if (!isLongPress.value) {
-    // Kısa dokunma - tıklama olarak işle
-    selectFolder(folder.id)
-  }
-  
+  event.target.classList.remove('long-press')
   isLongPress.value = false
 }
 
 const handleTouchCancel = () => {
   clearTimeout(touchTimer.value)
   isLongPress.value = false
+}
+
+const handleClick = (event, folder) => {
+  if (!isLongPress.value) {
+    selectFolder(folder.id)
+  }
 }
 </script>
 
@@ -767,5 +765,10 @@ const handleTouchCancel = () => {
 
 .note-card.mobile-drag.isLongPress::before {
   opacity: 1;
+}
+
+.long-press {
+  background-color: rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease;
 }
 </style>

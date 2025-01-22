@@ -63,13 +63,15 @@
                 active: activeNote?.id === note.id,
                 highlighted: route.query.highlight === note.id,
                 dragging: isDragging === note.id,
-                'mobile-drag': isMobile && isLongPress
+                'mobile-drag': isMobile && isLongPress,
+                'long-press': isLongPress
               }"
               :data-note-id="note.id"
               :draggable="isMobile ? isLongPress : true"
-              @touchstart.prevent="handleTouchStart($event, note)"
-              @touchend.prevent="handleTouchEnd($event, note)"
-              @touchcancel.prevent="handleTouchCancel"
+              @touchstart="handleTouchStart($event, note)"
+              @touchend="handleTouchEnd($event, note)"
+              @touchcancel="handleTouchCancel"
+              @click="handleClick($event, note)"
             >
               <div class="card-body p-2">
                 <div class="d-flex justify-content-between align-items-center">
@@ -455,6 +457,7 @@ const handleTouchStart = (event, note) => {
   
   touchTimer.value = setTimeout(() => {
     isLongPress.value = true
+    event.target.classList.add('long-press')
   }, 500)
 }
 
@@ -462,18 +465,19 @@ const handleTouchEnd = (event, note) => {
   if (!isMobile.value) return
   
   clearTimeout(touchTimer.value)
-  
-  if (!isLongPress.value) {
-    // Kısa dokunma - tıklama olarak işle
-    selectNote(note)
-  }
-  
+  event.target.classList.remove('long-press')
   isLongPress.value = false
 }
 
 const handleTouchCancel = () => {
   clearTimeout(touchTimer.value)
   isLongPress.value = false
+}
+
+const handleClick = (event, note) => {
+  if (!isLongPress.value) {
+    selectNote(note)
+  }
 }
 </script>
 
@@ -813,5 +817,10 @@ const handleTouchCancel = () => {
 
 .note-card.mobile-drag.isLongPress::before {
   opacity: 1;
+}
+
+.long-press {
+  background-color: rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease;
 }
 </style>
