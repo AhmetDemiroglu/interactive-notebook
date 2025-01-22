@@ -45,7 +45,7 @@
       <!-- Notlar grid'i -->
       <draggable
         v-model="filteredNotes"
-        :group="{ name: 'notes', pull: 'clone', put: false }"
+        :group="{ name: 'notes', pull: true, put: false }"
         item-key="id"
         class="row g-2 mx-0"
         @end="onDragEnd"
@@ -62,16 +62,12 @@
               :class="{ 
                 active: activeNote?.id === note.id,
                 highlighted: route.query.highlight === note.id,
-                dragging: isDragging === note.id,
-                'mobile-drag': isMobile && isLongPress,
-                'long-press': isLongPress
+                'is-dragging': isDragging === note.id
               }"
               :data-note-id="note.id"
-              :draggable="isMobile ? isLongPress : true"
-              @touchstart="handleTouchStart($event, note)"
-              @touchend="handleTouchEnd($event, note)"
-              @touchcancel="handleTouchCancel"
-              @click="handleClick($event, note)"
+              draggable="true"
+              @dragstart="handleNoteDragStart($event, note)"
+              @dragend="handleNoteDragEnd"
             >
               <div class="card-body p-2">
                 <div class="d-flex justify-content-between align-items-center">
@@ -249,7 +245,6 @@ import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import draggable from 'vuedraggable';
 import Editor from '@tinymce/tinymce-vue';
-import { useMediaQuery } from '@vueuse/core'
 
 const store = useStore();
 const router = useRouter();
@@ -292,8 +287,10 @@ const filteredNotes = computed({
     return [...notes].sort((a, b) => (a.order || 0) - (b.order || 0));
   },
   set: async (value) => {
+    if (!Array.isArray(value) || value.length === 0) return;
+    
     try {
-      isLoading.value = true
+      isLoading.value = true;
       const updatedNotes = value.map((note, index) => ({
         ...note,
         order: index,
@@ -304,7 +301,7 @@ const filteredNotes = computed({
     } catch (error) {
       console.error('Notların sırası güncellenirken hata:', error);
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
   }
 });
@@ -323,20 +320,24 @@ const selectNote = (note) => {
 
 // Sürükle-bırak işlemi sonrası
 const onDragEnd = async (evt) => {
-  if (!evt.to || evt.to.dataset.type !== 'folder') return;
+  if (!evt.item || !evt.to) return;
   
-  try {
-    const targetFolderId = evt.to.dataset.folderId;
-    const noteId = evt.item.dataset.noteId;
+  const targetFolderId = evt.to.dataset.folderId;
+  const sourceFolder = evt.from.dataset.folderId;
+  const noteId = evt.item.dataset.noteId;
+  
+  if (!noteId || targetFolderId === sourceFolder) return;
 
-    if (noteId && targetFolderId) {
-      await store.dispatch('notes/updateNoteFolder', {
-        noteId,
-        folderId: targetFolderId === 'all' ? null : targetFolderId
-      });
-    }
+  try {
+    isLoading.value = true;
+    await store.dispatch('notes/updateNoteFolder', {
+      noteId,
+      folderId: targetFolderId === 'all' ? null : targetFolderId
+    });
   } catch (error) {
-    console.error('Not taşınırken hata:', error);
+    console.error('Not güncellenirken hata:', error);
+  } finally {
+    isLoading.value = false;
   }
 };
 
@@ -388,10 +389,10 @@ const getSelectedFolderName = computed(() => {
 
 // Not sürükleme başladığında
 const handleNoteDragStart = (event, note) => {
+  isDragging.value = note.id;
   event.dataTransfer.setData('noteId', note.id);
   event.dataTransfer.setData('type', 'note');
   event.dataTransfer.effectAllowed = 'move';
-  isDragging.value = note.id;
 };
 
 const handleNoteDragEnd = () => {
@@ -441,44 +442,6 @@ const editNote = (note) => {
 };
 
 const isLoading = ref(false)
-
-const isMobile = useMediaQuery('(max-width: 768px)')
-const isLongPress = ref(false)
-const touchTimer = ref(null)
-const touchStartPos = ref({ x: 0, y: 0 })
-
-const handleTouchStart = (event, note) => {
-  if (!isMobile.value) return
-  
-  touchStartPos.value = {
-    x: event.touches[0].clientX,
-    y: event.touches[0].clientY
-  }
-  
-  touchTimer.value = setTimeout(() => {
-    isLongPress.value = true
-    event.target.classList.add('long-press')
-  }, 500)
-}
-
-const handleTouchEnd = (event, note) => {
-  if (!isMobile.value) return
-  
-  clearTimeout(touchTimer.value)
-  event.target.classList.remove('long-press')
-  isLongPress.value = false
-}
-
-const handleTouchCancel = () => {
-  clearTimeout(touchTimer.value)
-  isLongPress.value = false
-}
-
-const handleClick = (event, note) => {
-  if (!isLongPress.value) {
-    selectNote(note)
-  }
-}
 </script>
 
 <style scoped>
@@ -623,9 +586,10 @@ const handleClick = (event, note) => {
   }
 }
 
-.note-card.dragging {
+.note-card.is-dragging {
   opacity: 0.5;
-  cursor: move;
+  transform: scale(1.02);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 @media (max-width: 768px) {
@@ -790,37 +754,5 @@ const handleClick = (event, note) => {
     flex: 0 0 25%;
     max-width: 25%;
   }
-}
-
-.note-card.mobile-drag {
-  touch-action: none; /* Mobilde scroll engellemesi */
-}
-
-.note-card.mobile-drag.dragging {
-  opacity: 0.5;
-  background: #f8f9fa;
-  border: 2px dashed #dee2e6;
-}
-
-/* Mobilde sürükleme başladığında gösterilecek ipucu */
-.note-card.mobile-drag::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.1);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.note-card.mobile-drag.isLongPress::before {
-  opacity: 1;
-}
-
-.long-press {
-  background-color: rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease;
 }
 </style>

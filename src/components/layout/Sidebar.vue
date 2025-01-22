@@ -77,16 +77,14 @@
               class="d-flex justify-content-between align-items-center p-2 folder-item"
               :class="{ 
                 active: activeFolder === element.id,
-                'drag-over': isDragOver === element.id,
-                'mobile-drag': isMobile && isLongPress
+                'drag-over': isDragOver === element.id
               }"
               :data-folder-id="element.id"
               :data-type="'folder'"
-              :draggable="isMobile ? isLongPress : true"
-              @touchstart="handleTouchStart($event, element)"
-              @touchend="handleTouchEnd($event, element)"
-              @touchcancel="handleTouchCancel"
-              @click="handleClick($event, element)"
+              @dragover.prevent
+              @dragenter.prevent="handleDragEnter($event, element.id)"
+              @dragleave.prevent="handleDragLeave($event, element.id)"
+              @drop="handleDrop($event, element.id)"
             >
               <div class="d-flex align-items-center flex-grow-1" @click="selectFolder(element.id)">
                 <i class="bi bi-folder me-2"></i>
@@ -305,7 +303,6 @@ import { useStore } from 'vuex';
 import draggable from 'vuedraggable';
 import { useRouter, useRoute } from 'vue-router';
 import Editor from '@tinymce/tinymce-vue';
-import { useMediaQuery } from '@vueuse/core';
 
 const store = useStore();
 const router = useRouter();
@@ -547,44 +544,6 @@ const handleDragLeave = (event, folderId) => {
     isDragOver.value = null;
   }
 };
-
-const isMobile = useMediaQuery('(max-width: 768px)')
-const isLongPress = ref(false)
-const touchTimer = ref(null)
-const touchStartPos = ref({ x: 0, y: 0 })
-
-const handleTouchStart = (event, folder) => {
-  if (!isMobile.value) return
-  
-  touchStartPos.value = {
-    x: event.touches[0].clientX,
-    y: event.touches[0].clientY
-  }
-  
-  touchTimer.value = setTimeout(() => {
-    isLongPress.value = true
-    event.target.classList.add('long-press')
-  }, 500)
-}
-
-const handleTouchEnd = (event, folder) => {
-  if (!isMobile.value) return
-  
-  clearTimeout(touchTimer.value)
-  event.target.classList.remove('long-press')
-  isLongPress.value = false
-}
-
-const handleTouchCancel = () => {
-  clearTimeout(touchTimer.value)
-  isLongPress.value = false
-}
-
-const handleClick = (event, folder) => {
-  if (!isLongPress.value) {
-    selectFolder(folder.id)
-  }
-}
 </script>
 
 <style scoped>
@@ -738,37 +697,5 @@ const handleClick = (event, folder) => {
   .folder-actions {
     opacity: 1;
   }
-}
-
-.note-card.mobile-drag {
-  touch-action: none; /* Mobilde scroll engellemesi */
-}
-
-.note-card.mobile-drag.dragging {
-  opacity: 0.5;
-  background: #f8f9fa;
-  border: 2px dashed #dee2e6;
-}
-
-/* Mobilde sürükleme başladığında gösterilecek ipucu */
-.note-card.mobile-drag::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.1);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-
-.note-card.mobile-drag.isLongPress::before {
-  opacity: 1;
-}
-
-.long-press {
-  background-color: rgba(0, 0, 0, 0.1);
-  transition: background-color 0.3s ease;
 }
 </style>
