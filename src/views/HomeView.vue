@@ -8,7 +8,9 @@
       </div>
     </div>
     <div v-else class="container-xl">
-      <NoteList />
+      <div class="d-flex">
+        <NoteList />
+      </div>
     </div>
   </div>
 </template>
@@ -16,7 +18,7 @@
 <script setup>
 import { onMounted, computed } from 'vue'
 import { useStore } from 'vuex'
-import NoteList from '../components/notes/NoteList.vue'
+import NoteList from '@/components/notes/NoteList.vue'
 
 const store = useStore()
 const isLoading = computed(() => store.getters.isLoading)
