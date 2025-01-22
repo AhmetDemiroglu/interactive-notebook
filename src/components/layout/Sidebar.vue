@@ -64,7 +64,7 @@
           v-model="draggableFolders" 
           item-key="id"
           group="folders-only"
-          handle=".folder-item"
+          :handle="isMobile ? '.folder-drag-handle' : undefined"
           @end="onDragEnd"
           ghost-class="ghost-folder"
           drag-class="dragging-folder"
@@ -81,31 +81,45 @@
               }"
               :data-folder-id="element.id"
               :data-type="'folder'"
+              draggable="true"
               @dragover.prevent
               @dragenter.prevent="handleDragEnter($event, element.id)"
               @dragleave.prevent="handleDragLeave($event, element.id)"
               @drop="handleDrop($event, element.id)"
             >
-              <div class="d-flex align-items-center flex-grow-1" @click="selectFolder(element.id)">
-                <i class="bi bi-folder me-2"></i>
-                <span>{{ element.name }}</span>
-                <span class="badge bg-secondary ms-2">{{ getFolderNoteCount(element.id) }}</span>
+              <!-- Mobil için drag handle -->
+              <div 
+                v-if="isMobile"
+                class="folder-drag-handle"
+                @mousedown="startDrag"
+                @touchstart="startDrag"
+              >
+                <i class="bi bi-grip-vertical"></i>
               </div>
-              <div class="folder-actions">
-                <button 
-                  class="btn btn-sm btn-outline-primary me-1"
-                  @click.stop="editFolder(element)"
-                  title="Düzenle"
-                >
-                  <i class="bi bi-pencil"></i>
-                </button>
-                <button 
-                  class="btn btn-sm btn-outline-danger"
-                  @click.stop="confirmDeleteFolder(element)"
-                  title="Sil"
-                >
-                  <i class="bi bi-trash"></i>
-                </button>
+
+              <!-- Folder içeriği -->
+              <div class="folder-content d-flex align-items-center justify-content-between w-100">
+                <div class="d-flex align-items-center" @click="selectFolder(element.id)">
+                  <i class="bi bi-folder me-2"></i>
+                  <span class="folder-name">{{ element.name }}</span>
+                  <span class="badge bg-secondary ms-2">{{ getFolderNoteCount(element.id) }}</span>
+                </div>
+                <div class="folder-actions">
+                  <button 
+                    class="btn btn-sm btn-outline-primary me-1"
+                    @click.stop="editFolder(element)"
+                    title="Düzenle"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button 
+                    class="btn btn-sm btn-outline-danger"
+                    @click.stop="confirmDeleteFolder(element)"
+                    title="Sil"
+                  >
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </template>
@@ -544,6 +558,31 @@ const handleDragLeave = (event, folderId) => {
     isDragOver.value = null;
   }
 };
+
+// Mobil kontrolü
+const isMobile = computed(() => {
+  return window.innerWidth <= 768;
+});
+
+// Sürükleme başlatma kontrolü
+const startDrag = (event) => {
+  if (!isMobile.value) return;
+  
+  const folderItem = event.target.closest('.folder-item');
+  if (event.target.closest('.folder-drag-handle')) {
+    folderItem.setAttribute('draggable', 'true');
+    // Sürükleme sırasında pointer-events'i geçici olarak aktif et
+    folderItem.style.pointerEvents = 'auto';
+    
+    const cleanup = () => {
+      folderItem.setAttribute('draggable', 'false');
+      folderItem.style.pointerEvents = '';
+      folderItem.removeEventListener('dragend', cleanup);
+    };
+    
+    folderItem.addEventListener('dragend', cleanup);
+  }
+};
 </script>
 
 <style scoped>
@@ -697,5 +736,92 @@ const handleDragLeave = (event, folderId) => {
   .folder-actions {
     opacity: 1;
   }
+
+  .folder-item {
+    user-select: none;
+  }
+
+  .folder-drag-handle {
+    cursor: grab;
+  }
+
+  .folder-drag-handle:active {
+    cursor: grabbing;
+  }
+}
+
+.folder-content {
+  flex: 1;
+  padding-left: 8px;
+  min-width: 0; /* Taşma kontrolü için */
+}
+
+.folder-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.folder-actions {
+  flex-shrink: 0; /* Butonların küçülmesini engelle */
+  white-space: nowrap; /* Butonları yan yana tut */
+}
+
+@media (max-width: 768px) {
+  .folder-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+  }
+  
+  .folder-drag-handle {
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    margin-right: 4px;
+  }
+
+  .folder-actions {
+    opacity: 1;
+    margin-left: 8px;
+  }
+}
+
+/* Tüm Notlar sekmesi için cursor */
+.all-notes .folder-item {
+  cursor: pointer;
+}
+
+/* Klasör öğeleri için cursor */
+.folder-content .folder-name,
+.folder-content .badge,
+.folder-content .bi-folder {
+  cursor: pointer;
+}
+
+/* Sürükleme durumunda cursor */
+.folder-drag-handle {
+  cursor: grab;
+}
+
+.folder-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Butonlar için cursor zaten pointer */
+
+/* Klasör öğesi hover durumu */
+.folder-item:hover {
+  background-color: #e9ecef;
+}
+
+/* Aktif klasör stilleri */
+.folder-item.active {
+  background-color: #0d47a1;
+  color: white;
 }
 </style>

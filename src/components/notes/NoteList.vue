@@ -54,6 +54,7 @@
         drag-class="dragging-card"
         :animation="200"
         :force-fallback="true"
+        :handle="isMobile ? '.drag-handle-mobile' : undefined"
       >
         <template #item="{ element: note }">
           <div class="col-12" :key="note.id">
@@ -69,6 +70,16 @@
               @dragstart="handleNoteDragStart($event, note)"
               @dragend="handleNoteDragEnd"
             >
+              <!-- Mobil için drag handle -->
+              <div 
+                v-if="isMobile"
+                class="drag-handle-mobile"
+                @mousedown="startDrag"
+                @touchstart="startDrag"
+              >
+                <i class="bi bi-grip-vertical"></i>
+              </div>
+
               <div class="card-body p-2">
                 <div class="d-flex justify-content-between align-items-center">
                   <h6 class="card-title mb-1 text-truncate" @click="selectNote(note)">
@@ -79,6 +90,15 @@
                       {{ getFolderName(note.folderId) }}
                     </span>
                     <div class="btn-group btn-group-sm">
+                      <!-- Mobil için taşıma butonu -->
+                      <button 
+                        v-if="isMobile"
+                        class="btn btn-outline-secondary btn-sm"
+                        @click.stop="showMoveNoteModal(note)"
+                        title="Taşı"
+                      >
+                        <i class="bi bi-folder-symlink"></i>
+                      </button>
                       <button 
                         class="btn btn-outline-primary btn-sm"
                         @click.stop="editNote(note)"
@@ -236,11 +256,59 @@
         </div>
       </div>
     </div>
+
+    <!-- Not Taşıma Modal -->
+    <div class="modal mt-5" v-if="showMoveModal">
+      <div class="modal-dialog modal-move">
+        <div class="modal-content">
+          <div class="modal-header py-2">
+            <h6 class="modal-title mb-0">Notu Taşı</h6>
+            <button 
+              type="button" 
+              class="btn-close"
+              @click="showMoveModal = false"
+            ></button>
+          </div>
+          <div class="modal-body py-3">
+            <select 
+              class="form-select"
+              v-model="selectedFolderId"
+            >
+              <option value="">Klasör Seçiniz</option>
+              <option value="all">Tüm Notlar</option>
+              <option 
+                v-for="folder in folders" 
+                :key="folder.id" 
+                :value="folder.id"
+              >
+                {{ folder.name }}
+              </option>
+            </select>
+          </div>
+          <div class="modal-footer py-2">
+            <button 
+              type="button" 
+              class="btn btn-sm btn-secondary" 
+              @click="showMoveModal = false"
+            >
+              İptal
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-sm btn-primary" 
+              @click="moveNote"
+            >
+              Taşı
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import draggable from 'vuedraggable';
@@ -442,6 +510,64 @@ const editNote = (note) => {
 };
 
 const isLoading = ref(false)
+
+// Mobil kontrolü
+const isMobile = computed(() => {
+  return window.innerWidth <= 768;
+});
+
+// Sürükleme başlatma kontrolü güncellendi
+const startDrag = (event) => {
+  if (!isMobile.value) return;
+  
+  const noteCard = event.target.closest('.note-card');
+  if (event.target.closest('.drag-handle-mobile')) {
+    noteCard.setAttribute('draggable', 'true');
+    // Sürükleme sırasında pointer-events'i geçici olarak aktif et
+    noteCard.style.pointerEvents = 'auto';
+    
+    const cleanup = () => {
+      noteCard.setAttribute('draggable', 'false');
+      noteCard.style.pointerEvents = '';
+      noteCard.removeEventListener('dragend', cleanup);
+    };
+    
+    noteCard.addEventListener('dragend', cleanup);
+  }
+};
+
+// Component unmount olduğunda draggable özelliğini kaldır
+onUnmounted(() => {
+  const cards = document.querySelectorAll('.note-card');
+  cards.forEach(card => card.setAttribute('draggable', 'false'));
+});
+
+const showMoveModal = ref(false);
+const selectedFolderId = ref('');
+const noteToMove = ref(null);
+
+const showMoveNoteModal = (note) => {
+  noteToMove.value = note;
+  selectedFolderId.value = note.folderId || '';
+  showMoveModal.value = true;
+};
+
+const moveNote = async () => {
+  if (!noteToMove.value) return;
+  
+  try {
+    isLoading.value = true;
+    await store.dispatch('notes/updateNoteFolder', {
+      noteId: noteToMove.value.id,
+      folderId: selectedFolderId.value === 'all' ? null : selectedFolderId.value
+    });
+    showMoveModal.value = false;
+  } catch (error) {
+    console.error('Not taşınırken hata:', error);
+  } finally {
+    isLoading.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -452,6 +578,7 @@ const isLoading = ref(false)
 }
 
 .note-card {
+  position: relative;
   cursor: grab;
   transition: all 0.3s ease;
   border: 1px solid #dee2e6;
@@ -607,6 +734,8 @@ const isLoading = ref(false)
 
   .note-card {
     margin-bottom: 8px;
+    pointer-events: auto !important;
+    user-select: none;
   }
 
   .note-content {
@@ -692,6 +821,48 @@ const isLoading = ref(false)
   .note-card .btn-group {
     opacity: 1; /* Her zaman görünür */
   }
+
+  /* Mobil için drag handle stili */
+  .drag-handle-mobile {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    border-right: 1px solid #dee2e6;
+    border-radius: 4px 0 0 4px;
+    cursor: grab;
+    pointer-events: auto;
+  }
+
+  .drag-handle-mobile:active {
+    cursor: grabbing;
+    background: #e9ecef;
+  }
+
+  /* Mobilde kart içeriğine padding ekle */
+  .card-body {
+    padding-left: 32px !important;
+  }
+  
+  /* Drag handle dışında sürüklemeyi devre dışı bırak */
+  .note-card {
+    pointer-events: none;
+  }
+
+  /* Butonlar için tıklama olaylarını aktif et */
+  .btn-group {
+    pointer-events: auto;
+  }
+
+  /* Butonlar için özel stil */
+  .btn-group {
+    z-index: 2;
+  }
 }
 
 /* Tablet ve Desktop için düzenleme */
@@ -753,6 +924,32 @@ const isLoading = ref(false)
   .col-12 {
     flex: 0 0 25%;
     max-width: 25%;
+  }
+}
+
+/* Modal stilleri güncellendi */
+.modal-move {
+  max-width: 400px;
+  margin: 1.75rem auto;
+}
+
+@media (max-width: 768px) {
+  .modal-move {
+    max-width: 90%;
+    margin: 3rem auto;
+  }
+  
+  .modal-content {
+    min-height: auto;
+  }
+  
+  .modal-header, 
+  .modal-footer {
+    padding: 0.75rem 1rem;
+  }
+  
+  .modal-body {
+    padding: 1rem;
   }
 }
 </style>
