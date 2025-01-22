@@ -3,7 +3,10 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom">
       <div class="container-fluid">
         <!-- Logo ve Başlık -->
-        <div class="navbar-brand d-flex align-items-center">
+        <div 
+          class="navbar-brand d-flex align-items-center logo-container"
+          @click="goHome"
+        >
           <img 
             src="../../assets/mindvault-logo.png" 
             alt="MindVault Logo" 
@@ -21,7 +24,18 @@
 </template>
 
 <script setup>
-// Artık ekstra bir şeye ihtiyacımız yok
+import { useRouter } from 'vue-router';
+import { useStore } from 'vuex';
+
+const router = useRouter();
+const store = useStore();
+
+const goHome = () => {
+  // Aktif klasörü temizle
+  store.commit('folders/SET_ACTIVE_FOLDER', null);
+  // Ana sayfaya yönlendir
+  router.push('/');
+};
 </script>
 
 <style scoped>
@@ -68,5 +82,19 @@
   .app-header {
     display: none;
   }
+}
+
+.logo-container {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.logo-container:hover {
+  opacity: 0.8;
+}
+
+.logo {
+  height: 32px;
+  width: auto;
 }
 </style> 

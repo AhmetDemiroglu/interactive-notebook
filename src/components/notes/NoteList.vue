@@ -45,15 +45,13 @@
       <!-- Notlar grid'i -->
       <draggable
         v-model="filteredNotes"
-        :group="{ name: 'notes', pull: true, put: false }"
+        :group="'notes'"
         item-key="id"
         class="row g-2 mx-0"
         @end="onDragEnd"
         :data-folder-id="activeFolder"
         ghost-class="ghost-card"
         drag-class="dragging-card"
-        :animation="200"
-        :force-fallback="true"
         :handle="isMobile ? '.drag-handle-mobile' : undefined"
       >
         <template #item="{ element: note }">
@@ -184,8 +182,12 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Klasör</label>
-              <select class="form-select" v-model="newNote.folderId">
-                <option value="">{{ getSelectedFolderName }}</option>
+              <select 
+                class="form-select"
+                v-model="newNote.folderId"
+              >
+                <option value="">Klasör Seçin</option>
+                <option value="all">Tüm Notlar</option>
                 <option 
                   v-for="folder in folders" 
                   :key="folder.id" 
@@ -304,6 +306,49 @@
         </div>
       </div>
     </div>
+
+    <!-- Yeni Klasör Modal -->
+    <div class="modal" v-if="showNewFolderModal">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Yeni Klasör</h5>
+            <button 
+              type="button" 
+              class="btn-close" 
+              @click="showNewFolderModal = false"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Klasör Adı</label>
+              <input 
+                type="text" 
+                class="form-control"
+                v-model="newFolderName"
+                placeholder="Klasör adı girin"
+              >
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button 
+              type="button" 
+              class="btn btn-secondary" 
+              @click="showNewFolderModal = false"
+            >
+              İptal
+            </button>
+            <button 
+              type="button" 
+              class="btn btn-primary" 
+              @click="createNewFolder"
+            >
+              Oluştur
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -320,12 +365,14 @@ const route = useRoute();
 
 // Modal state'i (tek bir yerde tanımla)
 const showNewNoteModal = ref(false);
+const showNewFolderModal = ref(false);
 
 const newNote = ref({
   title: '',
   content: '',
   folderId: ''
 });
+const newFolderName = ref('');
 
 // Store'dan verileri al
 const notes = computed(() => store.getters['notes/getAllNotes']);
@@ -386,7 +433,37 @@ const selectNote = (note) => {
   router.push(`/note/${note.id}`);
 };
 
-// Sürükle-bırak işlemi sonrası
+// Sürükleme başlatma kontrolü güncellendi
+const startDrag = (event) => {
+  if (!isMobile.value) return;
+  
+  const noteCard = event.target.closest('.note-card');
+  if (event.target.closest('.drag-handle-mobile')) {
+    noteCard.setAttribute('draggable', 'true');
+    
+    // Sürükleme sırasında pointer-events'i geçici olarak aktif et
+    noteCard.style.pointerEvents = 'auto';
+    
+    // Sürükleme başlangıcında veriyi set et
+    const noteId = noteCard.dataset.noteId;
+    const note = notes.value.find(n => n.id === noteId);
+    if (note) {
+      event.dataTransfer.setData('noteId', note.id);
+      event.dataTransfer.setData('type', 'note');
+      event.dataTransfer.effectAllowed = 'move';
+    }
+    
+    const cleanup = () => {
+      noteCard.setAttribute('draggable', 'false');
+      noteCard.style.pointerEvents = '';
+      noteCard.removeEventListener('dragend', cleanup);
+    };
+    
+    noteCard.addEventListener('dragend', cleanup);
+  }
+};
+
+// onDragEnd fonksiyonu güncellendi
 const onDragEnd = async (evt) => {
   if (!evt.item || !evt.to) return;
   
@@ -398,10 +475,20 @@ const onDragEnd = async (evt) => {
 
   try {
     isLoading.value = true;
+    
+    // Önce klasör değişikliğini yap
     await store.dispatch('notes/updateNoteFolder', {
       noteId,
       folderId: targetFolderId === 'all' ? null : targetFolderId
     });
+    
+    // Sonra sıralamayı güncelle
+    const updatedNotes = filteredNotes.value.map((note, index) => ({
+      ...note,
+      order: index
+    }));
+    
+    await store.dispatch('notes/updateNotesOrder', updatedNotes);
   } catch (error) {
     console.error('Not güncellenirken hata:', error);
   } finally {
@@ -516,32 +603,6 @@ const isMobile = computed(() => {
   return window.innerWidth <= 768;
 });
 
-// Sürükleme başlatma kontrolü güncellendi
-const startDrag = (event) => {
-  if (!isMobile.value) return;
-  
-  const noteCard = event.target.closest('.note-card');
-  if (event.target.closest('.drag-handle-mobile')) {
-    noteCard.setAttribute('draggable', 'true');
-    // Sürükleme sırasında pointer-events'i geçici olarak aktif et
-    noteCard.style.pointerEvents = 'auto';
-    
-    const cleanup = () => {
-      noteCard.setAttribute('draggable', 'false');
-      noteCard.style.pointerEvents = '';
-      noteCard.removeEventListener('dragend', cleanup);
-    };
-    
-    noteCard.addEventListener('dragend', cleanup);
-  }
-};
-
-// Component unmount olduğunda draggable özelliğini kaldır
-onUnmounted(() => {
-  const cards = document.querySelectorAll('.note-card');
-  cards.forEach(card => card.setAttribute('draggable', 'false'));
-});
-
 const showMoveModal = ref(false);
 const selectedFolderId = ref('');
 const noteToMove = ref(null);
@@ -566,6 +627,25 @@ const moveNote = async () => {
     console.error('Not taşınırken hata:', error);
   } finally {
     isLoading.value = false;
+  }
+};
+
+const createNewFolder = async () => {
+  if (!newFolderName.value.trim()) return;
+  
+  try {
+    const folderId = await store.dispatch('folders/createFolder', {
+      name: newFolderName.value.trim()
+    });
+    
+    // Yeni oluşturulan klasörü seç
+    newNote.value.folderId = folderId;
+    
+    // Modal'ı kapat ve input'u temizle
+    showNewFolderModal.value = false;
+    newFolderName.value = '';
+  } catch (error) {
+    console.error('Klasör oluşturulurken hata:', error);
   }
 };
 </script>

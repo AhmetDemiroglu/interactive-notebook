@@ -128,7 +128,7 @@
     </div>
 
     <div class="modal mt-5" v-if="showNewFolderModal">
-      <div class="modal-dialog">
+      <div class="modal-dialog modal-sm">
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title">Yeni Klasör</h5>
@@ -139,24 +139,31 @@
             ></button>
           </div>
           <div class="modal-body">
-            <input 
-              type="text" 
-              class="form-control" 
-              v-model="newFolderName" 
-              placeholder="Klasör adı"
-            >
+            <div class="mb-3">
+              <label class="form-label">Klasör Adı</label>
+              <input 
+                type="text" 
+                class="form-control"
+                v-model="newFolderName"
+                placeholder="Klasör adı girin"
+              >
+            </div>
           </div>
           <div class="modal-footer">
             <button 
               type="button" 
               class="btn btn-secondary" 
               @click="showNewFolderModal = false"
-            >İptal</button>
+            >
+              İptal
+            </button>
             <button 
               type="button" 
               class="btn btn-primary" 
-              @click="createFolder"
-            >Oluştur</button>
+              @click="createNewFolder"
+            >
+              Oluştur
+            </button>
           </div>
         </div>
       </div>
@@ -202,16 +209,22 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Klasör</label>
-              <select class="form-select" v-model="newNote.folderId">
-                <option value="">{{ getSelectedFolderName }}</option>
-                <option 
-                  v-for="folder in folders" 
-                  :key="folder.id" 
-                  :value="folder.id"
+              <div class="input-group">
+                <select 
+                  class="form-select"
+                  v-model="newNote.folderId"
                 >
-                  {{ folder.name }}
-                </option>
-              </select>
+                  <option value="">Klasör Seçin</option>
+                  <option value="all">Tüm Notlar</option>
+                  <option 
+                    v-for="folder in folders" 
+                    :key="folder.id" 
+                    :value="folder.id"
+                  >
+                    {{ folder.name }}
+                  </option>
+                </select>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -308,6 +321,48 @@
         </div>
       </div>
     </div>
+
+    <!-- Not Taşıma Modal -->
+    <div class="modal mt-5" v-if="showMoveModal">
+      <div class="modal-dialog modal-move">
+        <div class="modal-content">
+          <div class="modal-header py-2">
+            <h6 class="modal-title mb-0">Notu Taşı</h6>
+            <button 
+              type="button" 
+              class="btn-close"
+              @click="showMoveModal = false"
+            ></button>
+          </div>
+          <div class="modal-body py-3">
+            <div class="input-group">
+              <select 
+                class="form-select"
+                v-model="selectedFolderId"
+              >
+                <option value="">Klasör Seçiniz</option>
+                <option value="all">Tüm Notlar</option>
+                <option 
+                  v-for="folder in folders" 
+                  :key="folder.id" 
+                  :value="folder.id"
+                >
+                  {{ folder.name }}
+                </option>
+              </select>
+              <button 
+                class="btn btn-outline-secondary" 
+                type="button"
+                @click="showNewFolderModal = true"
+              >
+                <i class="bi bi-plus-lg"></i>
+              </button>
+            </div>
+          </div>
+          <!-- ... diğer modal içeriği ... -->
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -394,14 +449,22 @@ const selectFolder = async (folderId) => {
 }
 
 // Yeni klasör oluşturma
-const createFolder = () => {
-  if (newFolderName.value.trim()) {
-    store.dispatch('folders/createFolder', {
-      name: newFolderName.value,
-      order: folders.value.length,
+const createNewFolder = async () => {
+  if (!newFolderName.value.trim()) return;
+  
+  try {
+    const folderId = await store.dispatch('folders/createFolder', {
+      name: newFolderName.value.trim()
     });
-    newFolderName.value = '';
+    
+    // Yeni oluşturulan klasörü seç
+    selectedFolderId.value = folderId;
+    
+    // Modal'ı kapat ve input'u temizle
     showNewFolderModal.value = false;
+    newFolderName.value = '';
+  } catch (error) {
+    console.error('Klasör oluşturulurken hata:', error);
   }
 };
 
@@ -583,6 +646,9 @@ const startDrag = (event) => {
     folderItem.addEventListener('dragend', cleanup);
   }
 };
+
+const showMoveModal = ref(false);
+const selectedFolderId = ref('');
 </script>
 
 <style scoped>
