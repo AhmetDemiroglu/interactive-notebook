@@ -96,13 +96,6 @@
                       {{ getFolderName(note.folderId) }}
                     </span>
                     <div class="btn-group btn-group-sm">
-                      <button 
-                        class="btn btn-outline-secondary btn-sm"
-                        @click.stop="selectNote(note)"
-                        title="Görüntüle"
-                      >
-                        <i class="bi bi-eye"></i>
-                      </button>
                       <!-- Mobil için taşıma butonu -->
                       <button 
                         v-if="isMobile"
@@ -820,7 +813,7 @@ const handleDragLeave = (event, id) => {
 
 .btn-group .btn {
   padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
 }
 
 .btn-group .btn:hover {
@@ -998,6 +991,11 @@ const handleDragLeave = (event, id) => {
     cursor: grabbing;
     background: #e9ecef;
   }
+
+  /* Mobilde butonları her zaman göster */
+  .note-card .btn-group {
+    opacity: 1 !important;
+  }
 }
 
 /* Tablet ve Desktop için düzenleme */
@@ -1049,16 +1047,16 @@ const handleDragLeave = (event, id) => {
 /* Desktop için düzenleme */
 @media (min-width: 992px) {
   .col-12 {
-    flex: 0 0 33.33%;
-    max-width: 33.33%;
+    flex: 0 0 33.333333%;
+    max-width: 33.333333%;
   }
 }
 
 /* Geniş ekranlar için düzenleme */
 @media (min-width: 1200px) {
   .col-12 {
-    flex: 0 0 33.33%;
-    max-width: 33.33%;
+    flex: 0 0 25%;
+    max-width: 25%;
   }
 }
 
@@ -1091,11 +1089,5 @@ const handleDragLeave = (event, id) => {
 .drag-over {
   border: 2px dashed #0d6efd;
   background-color: #e9ecef;
-}
-
-/* Görüntüle butonu için özel stil */
-.btn-group .btn-outline-secondary:hover {
-  background-color: #6c757d;
-  color: white;
 }
 </style>
