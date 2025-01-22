@@ -839,31 +839,39 @@ const handleDragLeave = (event, id) => {
     margin: 0;
     touch-action: none;
     position: relative;
+    will-change: transform;
   }
 
   .ghost-card {
     opacity: 0.5;
     background: #f8f9fa;
-    position: absolute;
     pointer-events: none;
     z-index: 1000;
-    width: 100%;
-    height: 60px;
     box-sizing: border-box;
+    transition: transform 0.2s ease;
+  }
+
+  .is-dragging {
+    opacity: 0.5;
+    transform: scale(0.98);
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
   }
 
   .note-placeholder {
     background-color: #e9ecef;
     border: 2px dashed #0d6efd;
     height: 60px;
-    margin-bottom: 8px;
+    min-height: 60px;
+    margin: 4px 0;
+    opacity: 0.6;
+    transition: all 0.2s ease;
   }
 
-  .is-dragging {
-    opacity: 0.5;
-    transform: scale(0.95);
-    background: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  .drag-over {
+    border: 2px dashed #0d6efd;
+    background-color: #e9ecef;
   }
 
   .drag-handle-mobile {
@@ -880,10 +888,6 @@ const handleDragLeave = (event, id) => {
   }
 
   .search-box {
-    width: 100%;
-  }
-
-  .col-12.col-md-4.col-lg-3.col-xl-2 {
     width: 100%;
   }
 
@@ -907,77 +911,18 @@ const handleDragLeave = (event, id) => {
     padding: 0.75rem;
     display: flex;
     flex-direction: column;
+    padding-left: 32px !important;
   }
 
   .note-card {
-    margin-bottom: 8px;
-    height: auto;
+    pointer-events: none;
   }
 
-  .card-title {
-    font-size: 1rem;
-    margin-right: 8px;
-    flex: 1;
-    line-height: 1.2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .btn-group {
+    pointer-events: auto;
+    z-index: 2;
   }
 
-  .btn-group-sm .btn {
-    padding: 0.25rem 0.4rem;
-    font-size: 0.75rem;
-  }
-
-  .btn-group-sm .btn i {
-    font-size: 0.875rem;
-  }
-
-  .badge {
-    font-size: 0.7rem;
-  }
-
-  /* Container düzenlemeleri */
-  .container-fluid {
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-
-  .row {
-    margin-left: -4px;
-    margin-right: -4px;
-  }
-
-  .col-12 {
-    padding-left: 4px;
-    padding-right: 4px;
-  }
-
-  /* Modal düzenlemeleri */
-  .modal-dialog.modal-fullscreen-sm-down {
-    margin: 0;
-    max-height: 100vh;
-  }
-
-  .modal-content {
-    border-radius: 0;
-    min-height: 100vh;
-  }
-
-  /* Arama kutusu düzenlemeleri */
-  .search-box {
-    margin-bottom: 8px;
-  }
-
-  .input-group {
-    width: 100%;
-  }
-
-  .note-card .btn-group {
-    opacity: 1;
-  }
-
-  /* Mobil için drag handle stili */
   .drag-handle-mobile {
     position: absolute;
     left: 0;
@@ -997,26 +942,6 @@ const handleDragLeave = (event, id) => {
   .drag-handle-mobile:active {
     cursor: grabbing;
     background: #e9ecef;
-  }
-
-  /* Mobilde kart içeriğine padding ekle */
-  .card-body {
-    padding-left: 32px !important;
-  }
-  
-  /* Drag handle dışında sürüklemeyi devre dışı bırak */
-  .note-card {
-    pointer-events: none;
-  }
-
-  /* Butonlar için tıklama olaylarını aktif et */
-  .btn-group {
-    pointer-events: auto;
-  }
-
-  /* Butonlar için özel stil */
-  .btn-group {
-    z-index: 2;
   }
 }
 
