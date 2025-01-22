@@ -49,10 +49,18 @@
         item-key="id"
         :class="{'row g-2 mx-0': !isMobile, 'mobile-note-list': isMobile}"
         @end="onDragEnd"
+        @dragenter="handleDragEnter($event, element.id)"
+        @dragleave="handleDragLeave($event, element.id)"
         :data-folder-id="activeFolder"
         ghost-class="ghost-card"
         drag-class="dragging-card"
+        placeholder-class="note-placeholder"
         :handle="isMobile ? '.drag-handle-mobile' : undefined"
+        :animation="200"
+        :force-fallback="false"
+        :fallback-class="'is-dragging'"
+        :fallback-on-body="true"
+        lockAxis="y"
       >
         <template #item="{ element: note }">
           <div class="col-12" :key="note.id">
@@ -182,20 +190,22 @@
             </div>
             <div class="mb-3">
               <label class="form-label">Klasör</label>
-              <select 
-                class="form-select"
-                v-model="newNote.folderId"
-              >
-                <option value="">Klasör Seçin</option>
-                <option value="all">Tüm Notlar</option>
-                <option 
-                  v-for="folder in folders" 
-                  :key="folder.id" 
-                  :value="folder.id"
+              <div class="input-group">
+                <select 
+                  class="form-select"
+                  v-model="newNote.folderId"
                 >
-                  {{ folder.name }}
-                </option>
-              </select>
+                  <option value="">Klasör Seçin</option>
+                  <option value="all">Tüm Notlar</option>
+                  <option 
+                    v-for="folder in folders" 
+                    :key="folder.id" 
+                    :value="folder.id"
+                  >
+                    {{ folder.name }}
+                  </option>
+                </select>
+              </div>
             </div>
           </div>
           <div class="modal-footer">
@@ -353,7 +363,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, watch, onUnmounted } from 'vue';
+import { ref, computed, nextTick, watch, onUnmounted, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import draggable from 'vuedraggable';
@@ -465,34 +475,25 @@ const startDrag = (event) => {
 
 // onDragEnd fonksiyonu güncellendi
 const onDragEnd = async (evt) => {
+  console.log("Drag Event:", evt);
   if (!evt.item || !evt.to) return;
-  
-  const targetFolderId = evt.to.dataset.folderId;
-  const sourceFolder = evt.from.dataset.folderId;
-  const noteId = evt.item.dataset.noteId;
-  
-  if (!noteId || targetFolderId === sourceFolder) return;
 
+  const movedNote = filteredNotes.value.splice(evt.oldIndex, 1)[0];
+  filteredNotes.value.splice(evt.newIndex, 0, movedNote);
+
+  console.log("Moved Note:", movedNote);
+  console.log("New Index:", evt.newIndex);
+
+  const updatedNotes = filteredNotes.value.map((note, index) => ({
+    ...note,
+    order: index
+  }));
+
+  console.log("Updated Notes Order:", updatedNotes);
   try {
-    isLoading.value = true;
-    
-    // Önce klasör değişikliğini yap
-    await store.dispatch('notes/updateNoteFolder', {
-      noteId,
-      folderId: targetFolderId === 'all' ? null : targetFolderId
-    });
-    
-    // Sonra sıralamayı güncelle
-    const updatedNotes = filteredNotes.value.map((note, index) => ({
-      ...note,
-      order: index
-    }));
-    
     await store.dispatch('notes/updateNotesOrder', updatedNotes);
   } catch (error) {
-    console.error('Not güncellenirken hata:', error);
-  } finally {
-    isLoading.value = false;
+    console.error('Not sırası güncellenirken hata:', error);
   }
 };
 
@@ -599,9 +600,7 @@ const editNote = (note) => {
 const isLoading = ref(false)
 
 // Mobil kontrolü
-const isMobile = computed(() => {
-  return window.innerWidth <= 768;
-});
+const isMobile = ref(false);
 
 const showMoveModal = ref(false);
 const selectedFolderId = ref('');
@@ -646,6 +645,33 @@ const createNewFolder = async () => {
     newFolderName.value = '';
   } catch (error) {
     console.error('Klasör oluşturulurken hata:', error);
+  }
+};
+
+const updateIsMobile = () => {
+  isMobile.value = window.innerWidth <= 768;
+};
+
+onMounted(() => {
+  updateIsMobile();
+  window.addEventListener('resize', updateIsMobile);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateIsMobile);
+});
+
+const handleDragEnter = (event, id) => {
+  const target = event.target.closest('.note-card');
+  if (target) {
+    target.classList.add('drag-over');
+  }
+};
+
+const handleDragLeave = (event, id) => {
+  const target = event.target.closest('.note-card');
+  if (target) {
+    target.classList.remove('drag-over');
   }
 };
 </script>
@@ -805,11 +831,43 @@ const createNewFolder = async () => {
     flex-direction: column;
     gap: 8px;
     padding: 8px;
+    position: relative;
   }
 
   .note-card {
     width: 100%;
     margin: 0;
+    touch-action: none;
+    position: relative;
+  }
+
+  .ghost-card {
+    opacity: 0.5;
+    background: #f8f9fa;
+    position: absolute;
+    pointer-events: none;
+    z-index: 1000;
+    width: 100%;
+    height: 60px;
+    box-sizing: border-box;
+  }
+
+  .note-placeholder {
+    background-color: #e9ecef;
+    border: 2px dashed #0d6efd;
+    height: 60px;
+    margin-bottom: 8px;
+  }
+
+  .is-dragging {
+    opacity: 0.5;
+    transform: scale(0.95);
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .drag-handle-mobile {
+    touch-action: none;
   }
 
   .col-12 {
@@ -916,7 +974,7 @@ const createNewFolder = async () => {
   }
 
   .note-card .btn-group {
-    opacity: 1; /* Her zaman görünür */
+    opacity: 1;
   }
 
   /* Mobil için drag handle stili */
@@ -1048,5 +1106,10 @@ const createNewFolder = async () => {
   .modal-body {
     padding: 1rem;
   }
+}
+
+.drag-over {
+  border: 2px dashed #0d6efd;
+  background-color: #e9ecef;
 }
 </style>
