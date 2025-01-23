@@ -60,10 +60,10 @@ Bu not yönetimi uygulaması, kullanıcıların notlarını etkili bir şekilde 
 5. **PDF İndirme ve Yazdırma:**
    - Not detay sayfasında bulunan ilgili butonlar aracılığıyla notlarınızı PDF olarak indirebilir veya yazdırabilirsiniz.
 
-## İletişim
+## Iletişim
 
 Proje ile ilgili sorularınız veya önerileriniz için benimle iletişime geçebilirsiniz:
 
-- **E-posta:** ahmetdemiroglu89@gmail.com
+- **E-posta:** <ahmetdemiroglu89@gmail.com>
 - **LinkedIn:** [Ahmet Demiroğlu](https://www.linkedin.com/in/ahmetdemiroglu/)
 - **GitHub:** [AhmetDemiroglu](https://github.com/AhmetDemiroglu)
